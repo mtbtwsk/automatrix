@@ -30,15 +30,13 @@ Reorder items in the left list by dragging and dropping.
 
 For legibility, AutoMatrix renames some of the most commonly used columns from their default names in CLSS. Refer to the following table:
 
-|-----------------------------------------------|
-|CLSS terminology    |   AutoMatrix terminology |
-|---------------------------------------------- |
-|Maximum Enrollment  |   Cap                    |
-|Section #           |   Sec.                   |
-|Combined            |   Crosslisted            |
-|Meeting Pattern     |   Schedule               |
-|Course Title        |   Title                  |
-|-----------------------------------------------|
+| CLSS terminology   | AutoMatrix terminology |
+|--------------------|------------------------|
+| Maximum Enrollment | Cap                    |
+| Section #          | Sec.                   |
+| Combined           | Crosslisted            |
+| Meeting Pattern    | Schedule               |
+| Course Title       | Title                  |
 
 
 
