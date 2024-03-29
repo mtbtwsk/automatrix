@@ -2,7 +2,6 @@
 import tkinter as tk
 import pandas as pd
 from gui.handlers.csv import clssreader
-from gui.handlers.excel import xlwriter
 from gui.mainwindow import mainwindow
 
 #Suppress warnings about editing pandas copy vs view
@@ -16,9 +15,7 @@ default_columns = ['Course','Sec.','Crosslisted','Title',
 def main():
     root = tk.Tk()
     reader = clssreader()
-    writer = xlwriter()
-
-    window = mainwindow(root,reader,writer)
+    window = mainwindow(root,reader)
     window.settings['kept_columns'] = default_columns
     window.run()
 

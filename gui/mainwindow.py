@@ -2,8 +2,9 @@
 import tkinter as tk
 from .dnd import dndListbox
 from .handlers.data import data_handler
+from .handlers.excel import xlwriter
 import pandas as pd, numpy as np
-import os
+import os, sys
 
 class mainwindow:
     '''
@@ -12,18 +13,17 @@ class mainwindow:
     enter their specifications for the output document.
     '''
 
-    def __init__(self,root,csv_reader,writer):
-        self.menu = root
-        self.menu.title('AutoMatrix')
+    def __init__(self,root,csv_reader):
+        self.root = root
+        self.root.title('AutoMatrix')
 
         self.reader = csv_reader
-        self.writer = writer    #For now this is CSV but in the future will be xlsx
 
         '''
         The mainwindow tracks the columns read in from the CLSS
         .csv files (self.columns), as well as various user-configurable
         settings (all set to False by default; name format defaults 
-        to 'Lastname'.
+        to 'Firstname Lastname'.
         '''
         self.columns = []
         self.settings = {
@@ -35,7 +35,8 @@ class mainwindow:
             'views'              : {'default'       : ['Course Schedule',tk.BooleanVar(value=True)],
                                    'by_instructor'  : ['Instructor Schedule', tk.BooleanVar(value=True)],
                                    'by_day'         : ['Daily Schedule', tk.BooleanVar(value=True)],
-                                   'graphical'      : ['Graphical Schedule', tk.BooleanVar(value=True)] },
+                                   'graphical'      : ['Graphical Schedule', tk.BooleanVar(value=True)]
+                                   },
 
             'name'               : tk.StringVar(value='Firstname Lastname'),
 
@@ -44,6 +45,9 @@ class mainwindow:
                                                             tk.BooleanVar(value=False)],
                                     'combine_crosslisted': ['Include Xlists in Course Column',
                                                             lambda : self.toggle_combine_crosslisted(),
+                                                            tk.BooleanVar(value=False)],
+                                    'combine_cap'        : ['Show Course Cap w/ Enrollment',
+                                                            lambda : self.toggle_combine_cap(),
                                                             tk.BooleanVar(value=False)],
                                     'separatetitles'     : ['Separate Columns for Title and Topic',
                                                             lambda : self.toggle_separatetitles(),
@@ -61,8 +65,48 @@ class mainwindow:
             'has_read_file'         : False
         }
 
+        self.create_main_window()
+
+    def create_main_window(self):
+        #The menu bar is outside of the main frames
+        self.menubar = tk.Menu(self.root,
+                            tearoff=0
+        )
+        file_menu = tk.Menu(self.menubar, 
+                            tearoff=0
+                            )
+        if sys.platform.startswith('darwin'):  
+            file_menu.add_command(label = 'Open Files...', 
+                                command = lambda : self.read(),
+                                accelerator = "Cmd+O")
+            file_menu.add_command(label = 'Save As...', 
+                                  command = lambda : self.write(),
+                                  accelerator = "Cmd+S")
+            # file_menu.add_command(label='Restart',
+            #                   accelerator = "Cmd+R")
+        else:
+            file_menu.add_command(label = 'Open Files...', 
+                                command = lambda : self.read(),
+                                accelerator = "Ctrl+O")
+            file_menu.add_command(label = 'Save As...', 
+                                  command = lambda : self.write(),
+                                  accelerator = "Ctrl+S")
+            # file_menu.add_command(label='Restart',
+            #                     accelerator = "Ctrl+R")
+        self.menubar.add_cascade(label="File", menu=file_menu)
+        if sys.platform.startswith('darwin'):  # macOS
+            self.root.bind_all("<Command-o>", self.handle_hotkey)
+            self.root.bind_all("<Command-s>", self.handle_hotkey)
+            # self.root.bind_all("<Command-r>", self.handle_hotkey)
+        else:  # Windows or Linux
+            self.root.bind_all("<Control-o>", self.handle_hotkey)
+            self.root.bind_all("<Control-s>", self.handle_hotkey)
+            # self.root.bind_all("<Control-r>", self.handle_hotkey)
+        self.root.config(menu=self.menubar)
+
+
         #Placing three frames: Top, left, and right
-        self.top_frame = tk.Frame(root,
+        self.top_frame = tk.Frame(self.root,
                                   pady = 5,
                                   padx = 5
                                   )
@@ -70,7 +114,7 @@ class mainwindow:
                             columnspan = 3,
                             sticky = 'ew'
                             )
-        self.left_frame = tk.LabelFrame(root,
+        self.left_frame = tk.LabelFrame(self.root,
                                         height = '600px',
                                         pady = 5,
                                         padx = 5,
@@ -86,7 +130,7 @@ class mainwindow:
         self.left_frame.grid_rowconfigure(1,weight=1)
         self.left_frame.grid_rowconfigure(2,weight=1)
 
-        self.right_frame = tk.LabelFrame(root,
+        self.right_frame = tk.LabelFrame(self.root,
                                          height = '600px',
                                          pady = 5,
                                          padx=20,
@@ -100,7 +144,7 @@ class mainwindow:
                               
                               )
 
-        self.advanced_settings = tk.LabelFrame(self.menu,
+        self.advanced_settings = tk.LabelFrame(self.root,
                                                text='More Settings',
                                                pady = 5,
                                                padx=20,
@@ -116,7 +160,7 @@ class mainwindow:
         #The top frame contains read/write tools
         ##Button to read in files
         self.read_button = tk.Button(self.top_frame,
-                                     text='Select files...', 
+                                     text='Open Files...', 
                                      command=lambda : self.read()
                                      )
         self.read_button.pack(side='left')
@@ -130,10 +174,11 @@ class mainwindow:
 
         ##Button to write to disk
         self.write_button = tk.Button(self.top_frame,
-                                      text="Export...", 
+                                      text="Save As...", 
                                       command=lambda : self.write()
                                       )
         self.write_button.pack(side='right')
+        self.write_button['state'] = 'disabled'
 
 
         #The left frame contains the column-selection widgets
@@ -236,14 +281,7 @@ class mainwindow:
             rad = tk.Radiobutton(self.right_frame,text=option,value=option,variable=self.settings['name'])
             rad.pack(anchor='w')
 
-
-        ##Advanced settings frame
-        self.advanced_settings_button_text = tk.StringVar(value='Show Advanced Settings')
-        self.advanced_settings_button = tk.Button(self.right_frame,
-                                                  textvariable=self.advanced_settings_button_text,
-                                                  command=lambda : self.toggle_advanced_settings())
-        #self.advanced_settings_button.pack(anchor='w')
-        ##Checkbox 
+        ##Checkboxes for 
         for _, entry in self.settings['checkboxes'].items():
             checkbox = tk.Checkbutton(self.advanced_settings,
                                     wraplength=f'{self.views_label.winfo_reqwidth()-40}',
@@ -291,6 +329,9 @@ class mainwindow:
     def read(self):
         #Function for reading in files.
 
+        #First, enable the save button if necessary.
+        self.ungrey_save()
+
         #Read in files with reader, combine them into a df
         self.reader.select_files()
         self.reader.combine_csv()
@@ -312,15 +353,16 @@ class mainwindow:
         self.handler.cleanup()
         self.handler.extract_names('Instructor')
         self.handler.extract_names('Teaching Assistant')
-        self.handler.get_meetings()
 
         self.columns = self.handler.data.columns.tolist()
 
         #Since the Topic column gets combined with Title by default, we remove Topic
         #before generating the list of columns. Otherwise it would show up as a possible
         #column without being able to appear in the output.
-        if not self.flags['has_read_file']: self.columns.remove('Topic')
+        if not self.settings['checkboxes']['separatetitles'][2].get(): self.columns.remove('Topic')
 
+        #Term gets removed because outputs are organized by term
+        self.columns.remove('Term')
         self.populate()
 
         #Flag to indicate that a file has been read in
@@ -328,11 +370,37 @@ class mainwindow:
 
 
     def run(self):
-        self.menu.mainloop()
+        self.root.mainloop()
+
+    def ungrey_save(self):
+        if self.write_button['state'] == 'disabled':
+            self.write_button['state'] = 'normal'
+
+    def toggle_combine_cap(self):
+    # Remove and add the Cap column when check button is toggled
+        self.columns = list(self.columns)
+        if self.flags['has_read_file']:
+            if self.settings['checkboxes']['combine_cap'][2].get():
+                self.columns.remove('Cap')
+                try:
+                    self.settings['kept_columns'].remove('Cap')
+                except ValueError:
+                    pass
+            else:
+                self.columns.insert(0,'Cap')
+            self.populate()
+        else: pass
+
+
+    def restart(self):
+        self.root.destroy()  # Destroy the current main window
+        self.create_main_window()
+
 
 
     def toggle_combine_crosslisted(self):
     # Remove and add the Crosslisted column when check button is toggled
+        self.columns = list(self.columns)
         if self.flags['has_read_file']:
             if self.settings['checkboxes']['combine_crosslisted'][2].get():
                 self.columns.remove('Crosslisted')
@@ -382,13 +450,19 @@ class mainwindow:
     #Get a list of instructor names to use for Instructor View
         instructornames = self.handler.instructor_names(self.settings['name'].get(), self.handler.data['Instructor'].tolist())
 
+    #Dataframe to export
+        data_to_write = self.handler.data.copy()
+
     #Sort rows by Term
-        self.handler.sort_terms()
+        self.handler.sort_terms(data_to_write)
+
+        data_to_write['surname'] = data_to_write['Instructor']
+        data_to_write = self.handler.rename(data_to_write,'Lastname','surname')
 
     #Rename instructors, try renaming TAs unless TAs are not being kept
-        self.handler.rename(self.settings['name'].get(), 'Instructor')
+        data_to_write = self.handler.rename(data_to_write,self.settings['name'].get(), 'Instructor')
         try:
-            self.handler.rename(self.settings['name'].get(), 'Teaching Assistant')
+            data_to_write = self.handler.rename(data_to_write,self.settings['name'].get(), 'Teaching Assistant')
         except KeyError:
             pass
 
@@ -398,47 +472,68 @@ class mainwindow:
     #Apply checkbox settings
         #Separate titles?
         if not self.settings['checkboxes']['separatetitles'][2].get():
-            self.handler.data['Title'] = self.handler.data.apply(lambda row: 
+            data_to_write['Title'] = data_to_write.apply(lambda row: 
                                                                  row['Topic'] if pd.notna(row['Topic']) 
                                                                  else row['Title'], axis=1)
-            self.handler.data.drop(['Topic'],axis=1, inplace=True)
+            data_to_write.drop(['Topic'],axis=1, inplace=True)
         
         #Exclude discussion sections?
         if self.settings['checkboxes']['excludediscussion'][2].get():
-            self.handler.data = self.handler.data[~self.handler.data['Section Type'].isin(['Discussion'])]
+            data_to_write = data_to_write[~data_to_write['Section Type'].isin(['Discussion'])]
 
         #Exclude lab sections?
         if self.settings['checkboxes']['excludelaboratory'][2].get():
-            self.handler.data = self.handler.data[~self.handler.data['Section Type'].isin(['Laboratory'])]
+            data_to_write = data_to_write[~data_to_write['Section Type'].isin(['Laboratory'])]
 
         #Combine crosslists with course #s?
         if self.settings['checkboxes']['combine_crosslisted'][2].get():
-            self.handler.data['Crosslisted'].astype(str).dropna()
-            self.handler.data['Course'] = self.handler.data['Course'].astype(str) + ' (' + self.handler.data['Crosslisted'].fillna('').astype(str)+')'
-            self.handler.data['Course'] = self.handler.data['Course'].astype(str).apply(remove_trailing_parentheses).str.strip()
+            data_to_write['Crosslisted'].astype(str).dropna()
+            data_to_write['Course'] = data_to_write['Course'].astype(str) + ' (' + data_to_write['Crosslisted'].fillna('').astype(str)+')'
+            data_to_write['Course'] = data_to_write['Course'].astype(str).apply(remove_trailing_parentheses).str.strip()
     
         #Combine TAs with instructors?
         if self.settings['checkboxes']['mergeTAs'][2].get():
-            self.handler.data['Instructor'] = self.handler.data['Instructor']+' ('+self.handler.data['Teaching Assistant']+')'
-            self.handler.data['Instructor'] = self.handler.data['Instructor'].apply(remove_trailing_parentheses).str.strip()
+            data_to_write['Instructor'] = data_to_write['Instructor']+' ('+data_to_write['Teaching Assistant']+')'
+            data_to_write['Instructor'] = data_to_write['Instructor'].apply(remove_trailing_parentheses).str.strip()
             try:
-                self.handler.data.drop(['Teaching Assistant'],axis=1,inplace=True)
+                data_to_write.drop(['Teaching Assistant'],axis=1,inplace=True)
             except:
                 pass
+
+        #Combine enrollment with course cap?
+        if self.settings['checkboxes']['combine_cap'][2].get():
+            data_to_write['Enrollment'] = data_to_write['Enrollment'].astype(str).str.replace('.0','')+'/'+data_to_write['Cap'].astype(str).str.replace('.0','')
+            try:
+                data_to_write.drop(['Cap'],axis=1,inplace=True)
+            except:
+                pass
+            
     #'Suppressed data' is a df that's kept alongside self.handler.data but whose contents
     #are not made visible to the user, as they can't be put in the output.
-    #'Term' is a suppressed column because all the output sheets are dfs by Term.
+    #'Term' is a suppressed column because all the output sheets are sorted by Term.
     #'Meetings' is suppressed because it contains structured info about meetings,
-    #not just strings like 'MW3pm-3:20pm'
-        self.suppressed_data = self.handler.data[['Term','Meetings']]
+    #not just strings like 'MW3pm-3:20pm'. 'surname' is used only for the graphical schedule
+        data_to_write['Meetings'] = self.handler.get_meetings(data_to_write)
+        self.suppressed_data = data_to_write[['Term','Meetings','surname']]
 
     #Drop columns not specified by user and reorder according to user pref
-        self.handler.data = self.handler.data.reindex(columns=self.settings['kept_columns'])
+        data_to_write = data_to_write.reindex(columns=self.settings['kept_columns'])
 
     #Hand off to writer
-        self.writer.data = self.handler.data
-        self.writer.compile_excel(self.writer.data, self.settings['views'],instructornames, self.suppressed_data)
-        self.writer.write_excel()
+        writer = xlwriter(data_to_write,
+                          self.settings['views'],
+                          instructornames,
+                          self.suppressed_data)
+        writer.run()
+
+    def handle_hotkey(self,event):
+        if event.keysym == 'o':
+            self.read()
+        elif event.keysym == 's':
+            self.write()
+        elif event.keysym == 'r':
+            self.restart()
+
 
 def remove_trailing_parentheses(s):
     return s[:-3] if s.endswith(' ()') else s

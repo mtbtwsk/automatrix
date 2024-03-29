@@ -20,20 +20,21 @@ class data_handler:
             self.data = initial_df
         self.data.dropna()
 
-    def sort_terms(self):
-        if self.data.empty:
+    def sort_terms(self, df):
+        if df.empty:
             raise ValueError('No data accessible')
         else:
-            self.data['year'] = self.data['Term'].astype(str).str.extract(r'(\d{4})')
-            self.data['term'] = self.data['Term'].astype(str).str.extract(r'^\d{4}\s(\w+)$') 
+            df['year'] = df['Term'].astype(str).str.extract(r'(\d{4})')
+            df['term'] = df['Term'].astype(str).str.extract(r'^\d{4}\s(\w+)$') 
             # Define custom order for terms
             term_order = {'Winter': 0, 'Spring': 1, 'Summer': 2, 'Fall': 3}
             # Create a new column with custom order values
-            self.data['term_order'] = self.data['term'].map(term_order)
+            df['term_order'] = df['term'].map(term_order)
             # Sort by year and then by custom order
-            self.data.sort_values(by=['year', 'term_order'], ascending=[True, True], inplace=True)
+            df.sort_values(by=['year', 'term_order'], ascending=[True, True], inplace=True)
             # Drop the new column
-            self.data.drop(columns=['term_order'], inplace=True)
+            df.drop(columns=['term_order'], inplace=True)
+            return df
     
     def keep_columns(self,lst):
         to_drop = [col for col in self.data.columns if col not in lst]
@@ -80,12 +81,12 @@ class data_handler:
         self.data[column_name] = output
 
 
-    def rename(self, setting, column_name):
+    def rename(self, df, setting, column_name):
     # Function to overwrite Instructor and TA values
     # with formatted names (options: 'Last, First',
     # 'Last', and 'First Last')
         newcolumn = []
-        for row in self.data[column_name]:
+        for row in df[column_name]:
             newrow = []
             for item in row:
                 if setting == 'Lastname, Firstname':
@@ -106,15 +107,13 @@ class data_handler:
             #multiple times. This is annoying, so we remove duplicates from the list.  
             newrow = remove_duplicates(newrow)
 
-
             if setting == 'Lastname, Firstname':
                 newrow = '; '.join(newrow)
             else:
                 newrow = ', '.join(newrow)
-
-            
             newcolumn.append(newrow)
-        self.data[column_name] = newcolumn
+        df[column_name] = newcolumn
+        return df
     
     def instructor_names(self, setting, split_names):
     #Like `rename`, except it returns a list of whoever is in the Instructor
@@ -158,14 +157,19 @@ class data_handler:
                                  replace('See ','').str.replace('Also ',''))
 
 
-    def get_meetings(self):
-        work = self.data['Schedule'].str.split('; ')
+    def get_meetings(self, df):
+        work = df['Schedule'].str.split('; ')
         list_of_dicts = []
         for lst in work:
             temp_dict = {}
             for item in lst:
-                key, time = item.split(' ')
-                times = time.split('-')
+                key, meeting = item.split(' ')
+                times = meeting.split('-')
+                for i in range(len(times)):
+                    if ':' not in times[i]:
+                        times[i] = datetime.strptime('01-01-1900 ' + (times[i][:-2] + ":00" + times[i][-2:]), '%m-%d-%Y %I:%M%p')
+                    else:
+                        times[i] = datetime.strptime('01-01-1900 ' + times[i],'%m-%d-%Y %I:%M%p')
                 value = {'start': times[0], 'end':times[1]}
                 temp_dict[key] = value
             list_of_dicts.append(temp_dict)
@@ -179,16 +183,9 @@ class data_handler:
                         temp_dict[day] = values                      
                     elif day in key and not day =='T':
                         temp_dict[day] = values
-                    for _, value in values.items():
-                        if ":" not in value:
-                            # Insert ":00" before "am" or "pm"
-                            value = value[:-2] + ":00" + value[-2:]
-                        value = datetime.strptime(value, '%I:%M%p')
-                    else: 
-                        pass
             temp_dict = dict(sorted(temp_dict.items(), key=lambda x: days.index(x[0])))
             list_of_meetings.append(temp_dict)
-        self.data['Meetings'] = list_of_meetings
+        return list_of_meetings
 
 def remove_duplicates(lst):
     return list(dict.fromkeys(lst))
