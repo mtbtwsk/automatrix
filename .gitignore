@@ -3,3 +3,6 @@ venv/
 *.png
 build/
 dist/
+*.spec
+*.icns
+*.plist
