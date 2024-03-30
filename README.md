@@ -6,7 +6,7 @@ version 0.1.0
 
 ## Installation
 
-(Mac only for now.) Download the AutoMatrix.app file from this repository and move it to your Applications folder. Before you run it the first time, you may need to go to System Preferences > Security and manually allow it to be run.
+(Mac only for now.) Download the AutoMatrix.app.zip file from [Releases](https://github.com/mtbtwsk/automatrix/releases/tag/v0.1.0), unzip, and move it to your Applications folder. Before you run it the first time, you may need to go to System Preferences > Security and manually allow it to be run.
 
 ## How to use AutoMatrix 
 
@@ -21,6 +21,7 @@ After your courses have been entered in CLSS:
 7. Click `Save As...` to save the .xlsx file.
 
 ## Features
+<img width="600" alt="Screen Shot 2024-03-29 at 8 53 44 PM" src="https://github.com/mtbtwsk/automatrix/assets/165427058/d95bc59a-1078-4386-9353-d5b300fc14fe">
 
 ### Matrix Settings panel
 
