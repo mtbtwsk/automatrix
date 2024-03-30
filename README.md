@@ -21,6 +21,7 @@ After your courses have been entered in CLSS:
 7. Click `Save As...` to save the .xlsx file.
 
 ## Features
+<img width="600" alt="Screen Shot 2024-03-29 at 8 53 44 PM" src="https://github.com/mtbtwsk/automatrix/assets/165427058/d95bc59a-1078-4386-9353-d5b300fc14fe">
 
 ### Matrix Settings panel
 
