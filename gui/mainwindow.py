@@ -16,6 +16,8 @@ class mainwindow:
     def __init__(self,root,csv_reader):
         self.root = root
         self.root.title('AutoMatrix')
+        self.root.resizable(width=False, height=False)
+
 
         self.reader = csv_reader
 
