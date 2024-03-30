@@ -6,4 +6,4 @@ dist/
 *.spec
 *.icns
 *.plist
-.*
+.DS_Store
