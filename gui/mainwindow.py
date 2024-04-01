@@ -43,16 +43,16 @@ class mainwindow:
             'name'               : tk.StringVar(value='Firstname Lastname'),
 
             'checkboxes'         : {'mergeTAs'           : ['Include TAs in Instructor Column',
-                                                            lambda : self.toggle_mergeTAs(),
+                                                            self.toggle_mergeTAs,
                                                             tk.BooleanVar(value=False)],
                                     'combine_crosslisted': ['Include Xlists in Course Column',
-                                                            lambda : self.toggle_combine_crosslisted(),
+                                                            self.toggle_combine_crosslisted,
                                                             tk.BooleanVar(value=False)],
                                     'combine_cap'        : ['Show Course Cap w/ Enrollment',
-                                                            lambda : self.toggle_combine_cap(),
+                                                            self.toggle_combine_cap,
                                                             tk.BooleanVar(value=False)],
                                     'separatetitles'     : ['Separate Columns for Title and Topic',
-                                                            lambda : self.toggle_separatetitles(),
+                                                            self.toggle_separatetitles,
                                                             tk.BooleanVar(value=False)],
                                     'excludediscussion'  : ['Exclude Discussion Sections',
                                                             lambda : None,
@@ -62,11 +62,22 @@ class mainwindow:
                                                             tk.BooleanVar(value=False)]
                                     }
         }
+
+        #We have to keep widgets in lists in order to destroy them all when resetting the main window
+        self.widgets = {
+            'menus':        [],
+            'frames':       [],
+            'labels':       [],
+            'listboxes':    [],
+            'checkboxes':   [],
+            'radios':       [],
+            'buttons':      [],
+            'scrollbars':   []
+        }
         
         self.flags = {
             'has_read_file'         : False
         }
-
         self.create_main_window()
 
     def create_main_window(self):
@@ -77,6 +88,7 @@ class mainwindow:
         file_menu = tk.Menu(self.menubar, 
                             tearoff=0
                             )
+
         if sys.platform.startswith('darwin'):  
             file_menu.add_command(label = 'Open Files...', 
                                 command = lambda : self.read(),
@@ -84,8 +96,8 @@ class mainwindow:
             file_menu.add_command(label = 'Save As...', 
                                   command = lambda : self.write(),
                                   accelerator = "Cmd+S")
-            # file_menu.add_command(label='Restart',
-            #                   accelerator = "Cmd+R")
+            file_menu.add_command(label='Restart',
+                               accelerator = "Cmd+R")
         else:
             file_menu.add_command(label = 'Open Files...', 
                                 command = lambda : self.read(),
@@ -93,19 +105,22 @@ class mainwindow:
             file_menu.add_command(label = 'Save As...', 
                                   command = lambda : self.write(),
                                   accelerator = "Ctrl+S")
-            # file_menu.add_command(label='Restart',
-            #                     accelerator = "Ctrl+R")
+            file_menu.add_command(label='Restart',
+                                accelerator = "Ctrl+R")
         self.menubar.add_cascade(label="File", menu=file_menu)
         if sys.platform.startswith('darwin'):  # macOS
             self.root.bind_all("<Command-o>", self.handle_hotkey)
             self.root.bind_all("<Command-s>", self.handle_hotkey)
-            # self.root.bind_all("<Command-r>", self.handle_hotkey)
+            self.root.bind_all("<Command-r>", self.handle_hotkey)
         else:  # Windows or Linux
             self.root.bind_all("<Control-o>", self.handle_hotkey)
             self.root.bind_all("<Control-s>", self.handle_hotkey)
-            # self.root.bind_all("<Control-r>", self.handle_hotkey)
+            self.root.bind_all("<Control-r>", self.handle_hotkey)
         self.root.config(menu=self.menubar)
 
+
+        self.widgets['menus'].append(self.menubar)
+        self.widgets['menus'].append(file_menu)
 
         #Placing three frames: Top, left, and right
         self.top_frame = tk.Frame(self.root,
@@ -129,6 +144,7 @@ class mainwindow:
                              column = 0,
                              sticky = 'ns'
                              )
+
         self.left_frame.grid_rowconfigure(1,weight=1)
         self.left_frame.grid_rowconfigure(2,weight=1)
 
@@ -157,6 +173,11 @@ class mainwindow:
         self.advanced_settings.grid(row = 2,
                                     column = 1,
                                     sticky = 'nsew')
+        
+        self.widgets['frames'].append(self.top_frame)
+        self.widgets['frames'].append(self.left_frame)
+        self.widgets['frames'].append(self.right_frame)
+        self.widgets['frames'].append(self.advanced_settings)
     
 
         #The top frame contains read/write tools
@@ -165,7 +186,9 @@ class mainwindow:
                                      text='Open Files...', 
                                      command=lambda : self.read()
                                      )
+        
         self.read_button.pack(side='left')
+        self.widgets['buttons'].append(self.read_button)
 
         ##Filenames displayed in a string
         self.selected_files_display = tk.Label(
@@ -173,6 +196,7 @@ class mainwindow:
             textvariable=self.settings['filenames']
             )
         self.selected_files_display.pack(side='left')
+        self.widgets['labels'].append(self.selected_files_display)
 
         ##Button to write to disk
         self.write_button = tk.Button(self.top_frame,
@@ -181,6 +205,7 @@ class mainwindow:
                                       )
         self.write_button.pack(side='right')
         self.write_button['state'] = 'disabled'
+        self.widgets['buttons'].append(self.write_button)
 
 
         #The left frame contains the column-selection widgets
@@ -192,22 +217,29 @@ class mainwindow:
                                    column=0,
                                    sticky='n'
                                    )
+        self.widgets['labels'].append(self.kept_items_label)
+
         self.discarded_items_label = tk.Label(self.left_frame,
                                               text = ''
                                               )
         self.discarded_items_label.grid(row=0,
                                         column=3
                                         )
+        self.widgets['labels'].append(self.discarded_items_label)
 
         ## Listboxes and scrollbars
         self.kept_scroll = tk.Scrollbar(self.left_frame, 
                                         orient="vertical",
                                         )              
+        self.widgets['scrollbars'].append(self.kept_scroll)
+
         self.kept_items = dndListbox(self.left_frame, 
                                      selectmode="single",
                                      yscrollcommand=self.kept_scroll.set,
                                      borderwidth=0, highlightthickness=0
                                      )
+        self.widgets['listboxes'].append(self.kept_items)
+
         self.kept_scroll.config(command=self.kept_items.yview)
         self.kept_items.grid(row=1, 
                              column=0, 
@@ -225,11 +257,14 @@ class mainwindow:
         self.discarded_scroll = tk.Scrollbar(self.left_frame, 
                                              orient="vertical"
                                              )
+        self.widgets['scrollbars'].append(self.discarded_scroll)
         self.discarded_items = tk.Listbox(self.left_frame, 
                                           selectmode="single",
                                           yscrollcommand=self.discarded_scroll.set,
                                         borderwidth=0, highlightthickness=0,
                                           )
+        self.widgets['listboxes'].append(self.discarded_items)
+
         self.discarded_scroll.config(command=self.discarded_items.yview)
         self.discarded_items.grid(row=1,
                                   column=3,
@@ -248,10 +283,14 @@ class mainwindow:
         self.keep_button = tk.Button(self.left_frame, text="<",
                                      command=lambda : self.move_item(
                                          self.discarded_items,self.kept_items))
+        self.widgets['buttons'].append(self.keep_button)
+
         self.keep_button.grid(row=1,column=2,sticky='s')
         self.discard_button = tk.Button(self.left_frame, text=">",
                                         command=lambda : self.move_item(
                                             self.kept_items,self.discarded_items))
+        self.widgets['buttons'].append(self.discard_button)
+
         self.discard_button.grid(row=2,column=2,sticky='n')
 
         #Right frame contains settings
@@ -261,6 +300,8 @@ class mainwindow:
                                     width=30,
                                     anchor='w'
                                     )
+        self.widgets['labels'].append(self.views_label)
+
         self.views_label.pack(anchor='w')
 
         ##Checkboxes for view options
@@ -270,18 +311,22 @@ class mainwindow:
                                       variable=self.settings['views'][entry][1]
                                       )
             checkbox.pack(anchor='w')
+            self.widgets['checkboxes'].append(checkbox)
 
         ##Label for name settings
         name_options_label = tk.Label(self.right_frame,
                                       text='Name format:'
                                       )
         name_options_label.pack(anchor='w')
+        self.widgets['labels'].append(name_options_label)
+
 
         ##Radio buttons for name settings
         name_options = ['Firstname Lastname', 'Lastname', 'Lastname, Firstname']
         for option in name_options:
             rad = tk.Radiobutton(self.right_frame,text=option,value=option,variable=self.settings['name'])
             rad.pack(anchor='w')
+            self.widgets['radios'].append(rad)
 
         ##Checkboxes for 
         for _, entry in self.settings['checkboxes'].items():
@@ -292,6 +337,7 @@ class mainwindow:
                                     variable=entry[2],
                                     onvalue=True, offvalue=False)
             checkbox.pack(anchor='w')
+            self.widgets['checkboxes'].append(checkbox)
 
         #Populate fields with initialized values
         self.populate()
@@ -306,7 +352,7 @@ class mainwindow:
         source.delete(selected)
         # add the selected item to listbox2
         destination.insert(selected, selected_text)
-        self.settings['kept_columns'] = self.kept_items.get(0,tk.END)
+        self.settings['kept_columns'] = list(self.kept_items.get(0,tk.END))
 
 
     def populate(self):
@@ -320,7 +366,7 @@ class mainwindow:
         other_columns = [col for col in self.columns if col not in self.settings['kept_columns']]
 
         # Concatenate the 'kept_columns' with the sorted 'other_columns'
-        self.columns = self.settings['kept_columns'] + other_columns
+        self.columns = list(self.settings['kept_columns']) + list(other_columns)
 
         #Then we add items to their listboxes:
         for value in self.columns:
@@ -330,9 +376,11 @@ class mainwindow:
 
     def read(self):
         #Function for reading in files.
-
         #First, enable the save button if necessary.
         self.ungrey_save()
+
+        #Flag to indicate that a file has been read in
+        self.flags['has_read_file'] = True
 
         #Read in files with reader, combine them into a df
         self.reader.select_files()
@@ -358,17 +406,22 @@ class mainwindow:
 
         self.columns = self.handler.data.columns.tolist()
 
-        #Since the Topic column gets combined with Title by default, we remove Topic
-        #before generating the list of columns. Otherwise it would show up as a possible
-        #column without being able to appear in the output.
-        if not self.settings['checkboxes']['separatetitles'][2].get(): self.columns.remove('Topic')
+        #Remove columns according to preferences already entered by the user
+        for key in self.settings['checkboxes'].keys():
+            if self.settings['checkboxes'][key][2].get():
+                self.settings['checkboxes'][key][1]()
+        # if not self.settings['checkboxes']['separatetitles'][2].get(): 
+        #     self.columns.remove('Topic')
+        # if self.settings['checkboxes']['mergeTAs'][2].get(): 
+        #     self.columns.remove('Teaching Assistant')
+        # if self.settings['checkboxes']['combine_cap'][2].get():
+        #     self.columns.remove('Cap')
+        # if self.settings['checkboxes']['combine_crosslisted'][2].get():
+        #     self.columns.remove('Crosslisted')
 
         #Term gets removed because outputs are organized by term
         self.columns.remove('Term')
         self.populate()
-
-        #Flag to indicate that a file has been read in
-        self.flags['has_read_file'] = True
 
 
     def run(self):
@@ -388,14 +441,16 @@ class mainwindow:
                     self.settings['kept_columns'].remove('Cap')
                 except ValueError:
                     pass
-            else:
+            elif 'Cap' not in self.columns:                 
                 self.columns.insert(0,'Cap')
             self.populate()
         else: pass
 
 
     def restart(self):
-        self.root.destroy()  # Destroy the current main window
+        for _,value in self.widgets.items():
+            value.destroy()
+        self.root.destroy()
         self.create_main_window()
 
 
@@ -410,7 +465,7 @@ class mainwindow:
                     self.settings['kept_columns'].remove('Crosslisted')
                 except ValueError:
                     pass
-            else:
+            elif 'Crosslisted' not in self.columns:                 
                 self.columns.insert(0,'Crosslisted')
             self.populate()
         else: pass
@@ -424,7 +479,7 @@ class mainwindow:
                     self.settings['kept_columns'].remove('Teaching Assistant')
                 except ValueError:
                     pass
-            else:
+            elif 'Teaching Assistant' not in self.columns: 
                 self.columns.insert(0,'Teaching Assistant')
             self.populate()
         else: pass
@@ -433,9 +488,9 @@ class mainwindow:
     def toggle_separatetitles(self):
     # Remove and add the Topic column when check button is toggled
         if self.flags['has_read_file']:
-            if self.settings['checkboxes']['separatetitles'][2].get():
+            if self.settings['checkboxes']['separatetitles'][2].get() and 'Topic' not in self.columns:
                 self.columns.insert(0,'Topic')
-            else:
+            elif 'Topic' in self.columns:
                 self.columns.remove('Topic')
                 try:
                     self.settings['kept_columns'].remove('Topic')
@@ -468,8 +523,7 @@ class mainwindow:
         except KeyError:
             pass
 
-        self.settings['kept_columns'] = self.kept_items.get(0,tk.END)
-        self.settings['kept_columns'] = list(self.settings['kept_columns'])
+        self.settings['kept_columns'] = list(self.kept_items.get(0,tk.END))
 
     #Apply checkbox settings
         #Separate titles?
