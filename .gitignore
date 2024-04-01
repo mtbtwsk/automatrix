@@ -1,9 +1,15 @@
 venv/
 .vscode/
-*.png
 build/
 dist/
 *.spec
+*.png
 *.icns
+*.psd
 *.plist
 .DS_Store
+*.pyc
+gui/handlers/__pycache__/__init__.cpython-38.pyc
+gui/handlers/__pycache__/csv.cpython-38.pyc
+gui/handlers/__pycache__/data.cpython-38.pyc
+gui/handlers/__pycache__/excel.cpython-38.pyc

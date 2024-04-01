@@ -6,7 +6,7 @@ import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
 
 from openpyxl.styles import Alignment,Font,PatternFill
-from openpyxl import Workbook, utils
+from openpyxl import Workbook
 from openpyxl.drawing.image import Image
 
 from tkinter import filedialog
@@ -21,7 +21,6 @@ class xlwriter:
         self.names = names
         self.complete_data = self.data.join(suppressed_data)
         self.output_row = 1
-        self.img_idx = 0
 
                 
     #Dictionary for translating day abbreviations
@@ -105,6 +104,7 @@ class xlwriter:
         filepath = filedialog.asksaveasfilename(initialfile='matrix.xlsx',defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
         self.wb.save(filepath)
 
+
         
     def write_graphical(self):
         #Color palette for class bars
@@ -119,7 +119,7 @@ class xlwriter:
             '#FFB6C1',  # Light Pink
             '#778899',  # Light Slate Gray
             '#B0C4DE',  # Light Steel Blue
-            '#FFFFE0',  # Light Yellow
+            '#CCFFE0',  # Light Mint Green
             '#20B2AA',  # Light Sea Green
             '#E6E6FA'   # Light Lavender
         ]
@@ -229,7 +229,7 @@ class xlwriter:
 
             # Save the plot as an image with a unique name
             
-            img_filename = 'output{}.png'.format(self.img_idx)
+            img_filename = '{}.png'.format(term)
 
             plt.savefig(img_filename, dpi=120)
 
@@ -244,7 +244,6 @@ class xlwriter:
             self.ws.add_image(img)
 
             self.output_row += 75
-            self.img_idx += 1
 
     def write_course_schedule(self):
     #Function to write the Course Schedule page

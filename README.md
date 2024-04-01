@@ -1,6 +1,8 @@
 # AutoMatrix
 version 0.1.0
 
+<img width="600" alt="Screen Shot 2024-03-29 at 8 53 44 PM" src="https://github.com/mtbtwsk/automatrix/assets/165427058/d95bc59a-1078-4386-9353-d5b300fc14fe">
+
 **AutoMatrix** is a utility for Northwestern staff that automates the generation of **course matrices**: the spreadsheets that we use to track course offerings and schedules within units. In addition to generating a matrix of course offerings, AutoMatrix can generate by-instructor, by-day, and graphical schedules of course offerings.
 
 
@@ -21,7 +23,6 @@ After your courses have been entered in CLSS:
 7. Click `Save As...` to save the .xlsx file.
 
 ## Features
-<img width="600" alt="Screen Shot 2024-03-29 at 8 53 44 PM" src="https://github.com/mtbtwsk/automatrix/assets/165427058/d95bc59a-1078-4386-9353-d5b300fc14fe">
 
 ### Matrix Settings panel
 
@@ -42,13 +43,13 @@ For space reasons, the Graphical Schedule displays the Course, Instructor, and m
 
 This panel offers some customization options for the output document.
 
-+ **Include TAs in Instructor Column**. If checked, TAs will be shown in the following format under Instructor: `Primary Instructor (Teaching Assistant, ...)`
-+ **Include Xlists in Course Column**. If checked, crosslisted courses will be listed in the following format under Course: `MYDEPT 101-1 (XLIST 101-1)`
++ **Include TAs in Instructor Column**. If checked, TAs will be shown in the following format under Instructor: `Primary Instructor (Teaching Assistant, ...)`.
++ **Include Xlists in Course Column**. If checked, crosslisted courses will be listed in the following format under Course: `MY_DEPT 101-1 (XLIST 101-1)`.
 + **Show Course Cap w/ Enrollment**. If checked, the Enrollment column will display the number enrolled against the course cap, e.g. `15/20`.
 + **Separate Columns for Title and Topic**. By default, course titles are rewritten with special topics. If you want to keep them separate, check this box.
 + **Exclude Discussion/Laboratory Sections**. These boxes allow you to exclude sections that are listed as labs or discussion sections.
 
-## Note: Column Titles
+## Note: Column Names
 
 For legibility, AutoMatrix renames some of the most commonly used columns from their default names in CLSS. Refer to the following table:
 

@@ -14,12 +14,12 @@ class clssreader:
         filetypes=(("CSV files", "*.csv"), ("all files", "*.*"))
         )
 
-    def combine_csv(self):
+    def combine_csv(self,filepaths):
         # Initialize an empty list to store DataFrames
         data_frames = []
-        if self.filepaths == []:
+        if filepaths == []:
             ValueError('No files selected')
-        for path in self.filepaths:
+        for path in filepaths:
             # Skip the first two rows and read the data
             data = pd.read_csv(path, skiprows=2)
             #Append to data_frames

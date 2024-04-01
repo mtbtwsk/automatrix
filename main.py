@@ -1,22 +1,15 @@
 # matrixgenerator.main.py
-import tkinter as tk
 import pandas as pd
-from gui.handlers.csv import clssreader
+import sys,os
+import tkinter as tk
 from gui.mainwindow import mainwindow
-
 #Suppress warnings about editing pandas copy vs view
 pd.options.mode.chained_assignment = None  # default='warn'
 
-# Default columns to retain (in the listed order)
-default_columns = ['Course','Sec.','Crosslisted','Title',
-                   'Schedule','Instructor','Teaching Assistant',
-                   'Room','Cap','Section Type']
+root = tk.Tk()
 
 def main():
-    root = tk.Tk()
-    reader = clssreader()
-    window = mainwindow(root,reader)
-    window.settings['kept_columns'] = default_columns
+    window = mainwindow(root)
     window.run()
 
 if __name__ == "__main__":

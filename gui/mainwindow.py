@@ -1,8 +1,10 @@
 # matrixgenerator.gui.mainwindow.py
 import tkinter as tk
+from tkinter import messagebox,filedialog
 from .dnd import dndListbox
 from .handlers.data import data_handler
 from .handlers.excel import xlwriter
+from .handlers.csv import clssreader
 import pandas as pd, numpy as np
 import os, sys
 
@@ -13,14 +15,14 @@ class mainwindow:
     enter their specifications for the output document.
     '''
 
-    def __init__(self,root,csv_reader):
+    def __init__(self, root):
+        # Default columns to retain (in the listed order)
+        self.default_columns = ['Course','Sec.','Crosslisted','Title',
+                        'Schedule','Instructor','Teaching Assistant',
+                        'Room','Cap','Section Type']
+
         self.root = root
-        self.root.title('AutoMatrix')
-        self.root.resizable(width=False, height=False)
-
-
-        self.reader = csv_reader
-
+        self.reader = clssreader()
         '''
         The mainwindow tracks the columns read in from the CLSS
         .csv files (self.columns), as well as various user-configurable
@@ -29,8 +31,7 @@ class mainwindow:
         '''
         self.columns = []
         self.settings = {
-            'filenames'          : tk.StringVar(value='Selected input files \
-                                                      will appear here.'),
+            'filenames'          : tk.StringVar(value='Selected input files will appear here.'),
 
             'kept_columns'       : [],
 
@@ -78,9 +79,12 @@ class mainwindow:
         self.flags = {
             'has_read_file'         : False
         }
+
         self.create_main_window()
 
     def create_main_window(self):
+        self.root.title('AutoMatrix')
+        self.root.resizable(width=False, height=False)
         #The menu bar is outside of the main frames
         self.menubar = tk.Menu(self.root,
                             tearoff=0
@@ -91,22 +95,24 @@ class mainwindow:
 
         if sys.platform.startswith('darwin'):  
             file_menu.add_command(label = 'Open Files...', 
-                                command = lambda : self.read(),
+                                command = self.read,
                                 accelerator = "Cmd+O")
             file_menu.add_command(label = 'Save As...', 
-                                  command = lambda : self.write(),
+                                  command = self.write,
                                   accelerator = "Cmd+S")
             file_menu.add_command(label='Restart',
-                               accelerator = "Cmd+R")
+                               accelerator = "Cmd+R",
+                               command = self.restart)
         else:
             file_menu.add_command(label = 'Open Files...', 
-                                command = lambda : self.read(),
+                                command = self.read,
                                 accelerator = "Ctrl+O")
             file_menu.add_command(label = 'Save As...', 
-                                  command = lambda : self.write(),
+                                  command = self.write,
                                   accelerator = "Ctrl+S")
             file_menu.add_command(label='Restart',
-                                accelerator = "Ctrl+R")
+                                accelerator = "Ctrl+R",
+                                command = self.restart)
         self.menubar.add_cascade(label="File", menu=file_menu)
         if sys.platform.startswith('darwin'):  # macOS
             self.root.bind_all("<Command-o>", self.handle_hotkey)
@@ -381,10 +387,11 @@ class mainwindow:
 
         #Flag to indicate that a file has been read in
         self.flags['has_read_file'] = True
+        self.settings['kept_columns'] = self.default_columns
 
         #Read in files with reader, combine them into a df
-        self.reader.select_files()
-        self.reader.combine_csv()
+        filepaths = self.select_files()
+        self.reader.combine_csv(filepaths)
 
         #Pass df from reader to handler
         self.handler = data_handler(self.reader.df)
@@ -406,18 +413,10 @@ class mainwindow:
 
         self.columns = self.handler.data.columns.tolist()
 
-        #Remove columns according to preferences already entered by the user
+        #Apply settings already selected before reading in csv files
         for key in self.settings['checkboxes'].keys():
             if self.settings['checkboxes'][key][2].get():
                 self.settings['checkboxes'][key][1]()
-        # if not self.settings['checkboxes']['separatetitles'][2].get(): 
-        #     self.columns.remove('Topic')
-        # if self.settings['checkboxes']['mergeTAs'][2].get(): 
-        #     self.columns.remove('Teaching Assistant')
-        # if self.settings['checkboxes']['combine_cap'][2].get():
-        #     self.columns.remove('Cap')
-        # if self.settings['checkboxes']['combine_crosslisted'][2].get():
-        #     self.columns.remove('Crosslisted')
 
         #Term gets removed because outputs are organized by term
         self.columns.remove('Term')
@@ -448,12 +447,25 @@ class mainwindow:
 
 
     def restart(self):
-        for _,value in self.widgets.items():
-            value.destroy()
-        self.root.destroy()
-        self.create_main_window()
+        result = messagebox.showwarning('', 'Restarting will delete your settings. Continue?', type=messagebox.YESNO)
 
-
+        if result == 'yes':
+            for _, item in self.settings['views'].items():
+                item[1].set(True)
+            self.settings['name'].set('Firstname Lastname')
+            for _,list in self.settings['checkboxes'].items():
+                list[2].set(False)
+            for _,list in self.widgets.items():
+                for item in list:
+                    item.destroy()
+            # self.root.destroy()
+            # window = tk.Tk()
+            self.create_main_window(self.root)
+            self.columns = []
+            self.settings['kept_columns'] = []
+            self.flags['has_read_file'] = False
+            self.populate()
+        else: pass
 
     def toggle_combine_crosslisted(self):
     # Remove and add the Crosslisted column when check button is toggled
@@ -502,7 +514,8 @@ class mainwindow:
     def write(self):
     #Raise an error if the user didn't select any outputs
         if all(not value[1].get() for value in self.settings['views'].values()):
-            raise ValueError('No output views selected.')
+            result = messagebox.showwarning('', 'You didn\'t select any matrix styles!')
+
 
     #Get a list of instructor names to use for Instructor View
         instructornames = self.handler.instructor_names(self.settings['name'].get(), self.handler.data['Instructor'].tolist())
@@ -572,7 +585,7 @@ class mainwindow:
         data_to_write['Meetings'] = self.handler.get_meetings(data_to_write)
         self.suppressed_data = data_to_write[['Term','Meetings','surname']]
 
-    #Drop columns not specified by user and reorder according to user pref
+    #Drop columns not specified by user and reorder according to user prefs
         data_to_write = data_to_write.reindex(columns=self.settings['kept_columns'])
 
     #Hand off to writer
@@ -589,7 +602,13 @@ class mainwindow:
             self.write()
         elif event.keysym == 'r':
             self.restart()
-
+    
+    def select_files(self):
+        filepaths = filedialog.askopenfilenames(
+        title="Select CSV files",
+        filetypes=(("CSV files", "*.csv"), ("all files", "*.*"))
+        )
+        return filepaths
 
 def remove_trailing_parentheses(s):
     return s[:-3] if s.endswith(' ()') else s
