@@ -1,8 +1,7 @@
 # AutoMatrix
 version 0.1.0
 
-**AutoMatrix** is a utility for Northwestern staff that automates the generation of **course matrices**: the spreadsheets that we use to track course offerings and schedules within units. In addition to generating a matrix of course offerings, AutoMatrix can generate by-instructor, by-day, and graphical schedules of course offerings.
-
+**AutoMatrix** is a utility that automates the generation of **course matrices** from [CLSS](https://www.courseleaf.com/software/clss/) export CSVs. In addition to generating a matrix of course offerings, AutoMatrix can generate by-instructor, by-day, and graphical schedules of course offerings.
 
 ## Installation
 
