@@ -3,7 +3,7 @@ version 0.1.0
 
 <img width="600" alt="Screen Shot 2024-03-29 at 8 53 44 PM" src="https://github.com/mtbtwsk/automatrix/assets/165427058/d95bc59a-1078-4386-9353-d5b300fc14fe">
 
-Test update: **AutoMatrix** is a utility that automates the generation of **course matrices** from [CLSS](https://www.courseleaf.com/software/clss/) export CSVs. In addition to generating a matrix of course offerings, AutoMatrix can generate by-instructor, by-day, and graphical schedules of course offerings.
+Test: **AutoMatrix** is a utility that automates the generation of **course matrices** from [CLSS](https://www.courseleaf.com/software/clss/) export CSVs. In addition to generating a matrix of course offerings, AutoMatrix can generate by-instructor, by-day, and graphical schedules of course offerings.
 
 ## Installation
 
