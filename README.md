@@ -7,7 +7,7 @@ Test update: **AutoMatrix** is a utility that automates the generation of **cour
 
 ## Installation
 
-(Mac only for now.) Download the AutoMatrix.app.zip file from [Releases](https://github.com/mtbtwsk/automatrix/releases/tag/v0.1.0), unzip, and move it to your Applications folder. Before you run it the first time, you may need to go to System Preferences > Security and manually allow it to be run.
+(Mac only for now.) Download the AutoMatrix file from [Releases](https://github.com/mtbtwsk/automatrix/releases/tag/v0.1.0), and double-click to run. Before you run it the first time, you may need to go to System Preferences > Security and manually allow it to be run.
 
 ## How to use AutoMatrix 
 
