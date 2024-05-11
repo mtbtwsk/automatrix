@@ -89,11 +89,11 @@ class data_handler:
         for row in df[column_name]:
             newrow = []
             for item in row:
-                if setting == 'Lastname, Firstname':
+                if setting == 'last_first':
                     newrow.append(', '.join(item))
-                if setting == 'Lastname':
+                if setting == 'last':
                     newrow.append(item[0])
-                if setting == 'Firstname Lastname':
+                if setting == 'first_last':
                     try:
                         newrow.append(item[1]+' '+item[0])
                     except IndexError:
@@ -107,7 +107,7 @@ class data_handler:
             #multiple times. This is annoying, so we remove duplicates from the list.  
             newrow = remove_duplicates(newrow)
 
-            if setting == 'Lastname, Firstname':
+            if setting == 'last_first':
                 newrow = '; '.join(newrow)
             else:
                 newrow = ', '.join(newrow)
@@ -125,11 +125,11 @@ class data_handler:
                 sorted_list.append(name)
         sorted_list.sort(key=lambda x: x[0])
         for name in sorted_list:
-            if setting == 'Lastname, Firstname':
+            if setting == 'last_first':
                 nameslist.append(', '.join(name))
-            if setting == 'Lastname':        
+            if setting == 'last':        
                 nameslist.append(name[0])
-            if setting == 'Firstname Lastname':
+            if setting == 'first_last':
                 try:
                     nameslist.append(name[1]+' '+name[0])
                 except IndexError:

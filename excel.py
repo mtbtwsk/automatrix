@@ -8,10 +8,7 @@ import matplotlib.gridspec as gridspec
 from openpyxl.styles import Alignment,Font,PatternFill
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image
-
-from tkinter import filedialog
-
-import re
+import re,tempfile
 
 
 class xlwriter:
@@ -23,7 +20,7 @@ class xlwriter:
         self.output_row = 1
 
                 
-    #Dictionary for translating day abbreviations
+    #Dictionaries for translating day abbreviations
         self.days_dict = {'Monday': 'M', 'Tuesday': 'T', 
                     'Wednesday': 'W', 'Thursday': 'Th', 'Friday':'F'}
         self.days_dict_reverse = {v: k for k, v in self.days_dict.items()}
@@ -65,30 +62,29 @@ class xlwriter:
 
         #Check if we're on the first sheet. If not, append
         #a new sheet and write to that
-            if view[1].get() and first:
+            if view[1] and first:
                 self.ws = self.wb.active
                 self.ws.title = view[0]
 
-            elif view[1].get():
+            elif view[1]:
                 self.ws = self.wb.create_sheet()
                 self.ws.title = view[0]
             first = False
 
         #Write 'Course Schedule' sheet
-            if key == 'default' and view[1].get(): self.write_course_schedule()
+            if key == 'default' and view[1]: self.write_course_schedule()
 
         #Write the 'By Instructor' sheet
-            if key == 'by_instructor' and view[1].get(): self.write_by_instructor()
+            if key == 'by_instructor' and view[1]: self.write_by_instructor()
 
         #Write the 'By Day' sheet
-            if key == 'by_day' and view[1].get(): self.write_by_day()
+            if key == 'by_day' and view[1]: self.write_by_day()
 
         #Write the 'Graphical Schedule' sheet
-            
-            if key == 'graphical' and view[1].get(): 
+            if key == 'graphical' and view[1]: 
                 self.write_graphical()
 
-        self.save()
+        return self.wb
 
 
     def merge_headers(self,ws,column_values,end_col):
@@ -98,13 +94,6 @@ class xlwriter:
                                end_column=end_col,
                                start_row=row[1].row, end_row=row[1].row
                                )
-
-
-    def save(self):
-        filepath = filedialog.asksaveasfilename(initialfile='matrix.xlsx',defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
-        self.wb.save(filepath)
-
-
         
     def write_graphical(self):
         #Color palette for class bars
@@ -123,7 +112,6 @@ class xlwriter:
             '#20B2AA',  # Light Sea Green
             '#E6E6FA'   # Light Lavender
         ]
-
         for term in self.complete_data['Term'].unique():
             data_term = self.complete_data[self.complete_data['Term'] == term]
             data_term['color'] = palette * (len(data_term) // len(palette)) + palette[:len(data_term) % len(palette)]
@@ -191,17 +179,6 @@ class xlwriter:
                     height = mdates.date2num(row['end']) - bottom
                     left = row['timeline']
                     bar = ax.bar(left, height, width=1, bottom=bottom, color=row['color'])
-
-
-                    # if int(sum(np.nan_to_num(max_timelines, nan=1))) > 20:
-                    #     fntsize = 4
-                    # elif int(sum(np.nan_to_num(max_timelines, nan=1))) > 15:
-                    #     fntsize = 6
-                    # elif int(sum(np.nan_to_num(max_timelines, nan=1))) > 10:
-                    #     fntsize=8
-                    # elif int(sum(np.nan_to_num(max_timelines, nan=1))) > 4:
-                    #     fntsize=10
-                    
  
                     ax.text(left, bottom + height/2, 
                             #String manipulation to remove any crosslisted courses---
@@ -227,22 +204,15 @@ class xlwriter:
             plt.tight_layout()
             plt.subplots_adjust(wspace=0)
 
-            # Save the plot as an image with a unique name
-            
-            img_filename = '{}.png'.format(term)
-
-            plt.savefig(img_filename, dpi=120)
+            # Save the plot as a temp file
+            img_filename = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+            plt.savefig(img_filename.name, dpi=120)
 
             # Load the image
-            img = Image(img_filename)
+            img = Image(img_filename.name)
             output_cell = 'A' + str(self.output_row)
-            # cell = self.ws.cell(row=self.output_row, column=utils.column_index_from_string('A'))
-            # cell.width = img.width
-            # cell.height = img.height
-
             img.anchor=(output_cell)
             self.ws.add_image(img)
-
             self.output_row += 75
 
     def write_course_schedule(self):
@@ -342,7 +312,7 @@ class xlwriter:
                 ##Next add a 'start' column, containing the start times of each meeting
                 ##(This is a bit ugly because if you refer to [day] within the scope of 
                 ##lambda x, then it doesn't retain its value at this point in the
-                ##method because it's evaluated later---so we have to raise it (QR!) and
+                ##method because it's evaluated later---so we have to raise it and
                 ##plug it in over the lambda x.)
                 new_df['start'] = new_df['Meetings'].apply((lambda d: 
                                                             (lambda x: 

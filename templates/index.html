@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatrix</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script>
+        $(function () {
+            $(".dragdrop").sortable({
+                connectWith: ".dragdrop"
+            });
+        });
+    </script>
+
+</head>
+
+<body>
+
+    <div id="wrap">
+        <div id="header">
+            <h1>Automatrix</h1>
+            <h2>A utility for generating course matrices and schedules with CLSS</h2>
+        </div>
+        <div id="read_write">
+            <input type="file" id="files" name="files" accept=".csv" multiple>
+
+            <button type="submit" id="save" name="save" disabled>Save...</button>
+        </div>
+
+        <div id="keep_discard">
+            <div class="box">
+
+                <h3>Keep</h3>
+                <ul id="keep" class="dragdrop">
+                </ul>
+            </div>
+
+            <div class="box">
+
+                <h3>Discard</h3>
+                <ul id="discard" class="dragdrop">
+                </ul>
+            </div>
+        </div>
+
+
+        <div id="export_settings">
+            <h3>Output views</h3>
+            <div class="item">
+                <input type="checkbox" id="course_schedule" name="course_schedule" checked disabled>
+                <label for="course_schedule">Course Schedule</label>
+            </div>
+            <div class="item">
+
+                <input type="checkbox" id="instructor_schedule" name="instructor_schedule" checked disabled>
+                <label for="instructor_schedule">Instructor Schedule</label>
+            </div>
+            <div class="item">
+                <input type="checkbox" id="daily_schedule" name="daily_schedule" checked disabled>
+                <label for="daily_schedule">Daily Schedule</label>
+            </div>
+            <div class="item">
+                <input type="checkbox" id="graphical_schedule" name="graphical_schedule" checked disabled>
+                <label for="graphical_schedule">Graphical Schedule</label>
+            </div>
+
+            <h3>Name format</h3>
+            <div class="item">
+                <input type="radio" id="first_last" name="name_format" value="first_last" checked disabled>
+                <label for="last_first">Firstname Lastname</label>
+            </div>
+            <div class="item">
+                <input type="radio" id="last" name="name_format" value="last" disabled>
+                <label for="last">Lastname</label>
+            </div>
+            <div class="item">
+                <input type="radio" id="last_first" name="name_format" value="last_first" disabled>
+                <label for="last_first">Lastname, Firstname</label>
+            </div>
+        </div>
+
+        <div id="more_settings">
+            <h3>More settings</h3>
+            <div class="item">
+                <input type="checkbox" id="tas_in_instructor" name="tas_in_instructor" disabled>
+                <label for="tas_in_instructor">Include TAs in <code>Instructor</code> Column</label>
+            </div>
+            <div class="item">
+                <input type="checkbox" id="xlists_in_course" name="xlists_in_course" disabled>
+                <label for="xlists_in_course">Include Crosslists in <code>Course</code> Column</label>
+            </div>
+            <div class="item">
+                <input type="checkbox" id="caps_in_enrollment" name="caps_in_enrollment" disabled>
+                <label for="caps_in_enrollment">Include Course Cap in <code>Enrollment</code> Column</label>
+            </div>
+            <div class="item">
+                <input type="checkbox" id="separate_title_topic" name="separate_title_topic" disabled>
+                <label for="separate_title_topic">Separate <code>Title</code> and <code>Topic</code> columns</label>
+            </div>
+            <div class="item">
+                <input type="checkbox" id="exclude_discussions" name="exclude_discussions" disabled>
+                <label for="exclude_discussions">Exclude Discussion Sections</label>
+            </div>
+            <div class="item">
+                <input type="checkbox" id="exclude_labs" name="exclude_labs" disabled>
+                <label for="exclude_labs">Exclude Laboratory Sections</label>
+            </div>
+        </div>
+        <div id="footer">
+            <p id="about_link">About</p>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <div id="about_text">
+            <p><strong>AutoMatrix</strong> is a utility that automates the generation of <strong>course
+                    matrices</strong> from <a href="https://www.courseleaf.com/software/clss/">CLSS</a> export CSVs.
+                AutoMatrix outputs formatted Excel files:</p>
+            <center><img src="{{url_for('static', filename='graphical.png')}}"></center><br>
+            <center><img src="{{url_for('static', filename='schedule.png')}}"></center>
+
+            <h2 id="how-to-use-automatrix">How to use AutoMatrix</h2>
+            <p>After your courses have been entered in CLSS:</p>
+            <ol>
+                <li>Navigate to the CLSS page for the term and department for which you want course information.</li>
+                <li>Click <code>export</code> in the top right corner:</li>
+                <img src="{{url_for('static', filename='export.png')}}">
+                <li><strong>Important</strong>: In the resulting menu, <strong>click <code>Check all</code></strong>, export the full
+                    .csv file, and save it to your computer:</li>
+                <img src="{{url_for('static', filename='check_all.png')}}">
+                <li>Repeat for all the academic terms you want to appear in your matrix.</li>
+                <li>Add the files to AutoMatrix, configure your preferences, and click <code>Save...</code> to save the
+                    .xlsx file.</li>
+            </ol>
+            <h2 id="features">Features</h2>
+            <h3 id="matrix-settings-panel">Matrix Settings panel</h3>
+            <p>The left listbox contains the columns you want to keep in the final output document, in the specified
+                order. It&#39;s preloaded with default choices. Move columns by dragging and dropping.</p>
+            <h3 id="export-views">Export views</h3>
+            <p>AutoMatrix generates four types of schedules:</p>
+            <ul>
+                <li><strong>Course Schedule</strong>: A simple by-quarter schedule of classes, ordered alphabetically by
+                    course number.</li>
+                <li><strong>Instructor Schedule</strong>: For each quarter, a sub-schedule for every primary instructor.
+                </li>
+                <li><strong>Daily Schedule</strong>: For each quarter, a sub-schedule for every day of the week.</li>
+                <li><strong>Graphical Schedule</strong>: A graphical representation of course offerings for each
+                    quarter.</li>
+            </ul>
+            <p>For space reasons, the Graphical Schedule displays the Course, Instructor, and meeting times only.</p>
+            <h3 id="more-settings">More settings</h3>
+            <p>This panel offers some customization options for the output document.</p>
+            <ul>
+                <li><strong>Include TAs in Instructor Column</strong>. If checked, TAs will be shown in the following
+                    format under Instructor: <code>Primary Instructor (Teaching Assistant, ...)</code>.</li>
+                <li><strong>Include Xlists in Course Column</strong>. If checked, crosslisted courses will be listed in
+                    the following format under Course: <code>MY_DEPT 101-1 (OTHER_DEPT 201-1)</code>.</li>
+                <li><strong>Show Course Cap w/ Enrollment</strong>. If checked, the Enrollment column will display the
+                    number enrolled against the course cap, e.g. <code>15/20</code>.</li>
+                <li><strong>Separate Columns for Title and Topic</strong>. By default, course titles are rewritten with
+                    special topics. If you want to keep them separate, check this box.</li>
+                <li><strong>Exclude Discussion/Laboratory Sections</strong>. These boxes allow you to exclude sections
+                    that are listed as labs or discussion sections.</li>
+            </ul>
+            <h2 id="note-column-names">Note: Column Names</h2>
+            <p>For legibility, AutoMatrix renames some of the most commonly used columns from their default names in
+                CLSS. Refer to the following table:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>CLSS</th>
+                        <th>AutoMatrix</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Maximum Enrollment</td>
+                        <td>Cap</td>
+                    </tr>
+                    <tr>
+                        <td>Section #</td>
+                        <td>Sec.</td>
+                    </tr>
+                    <tr>
+                        <td>Combined</td>
+                        <td>Crosslisted</td>
+                    </tr>
+                    <tr>
+                        <td>Meeting Pattern</td>
+                        <td>Schedule</td>
+                    </tr>
+                    <tr>
+                        <td>Course Title</td>
+                        <td>Title</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</body>
+
+<script>
+    var renameDict = {
+        'Maximum Enrollment': 'Cap',
+        'Section #': 'Sec.',
+        'Combined': 'Crosslisted',
+        'Meeting Pattern': 'Schedule',
+        'Course Title': 'Title',
+    };
+
+    var defaultColumns = ['Course', 'Sec.', 'Crosslisted', 'Title',
+        'Schedule', 'Instructor', 'Teaching Assistant',
+        'Room', 'Cap', 'Section Type'];
+
+    document.getElementById('files').addEventListener('change', function (e) {
+        //Ungrey options after a file has been read in
+        var inputs = document.querySelectorAll('input[type="checkbox"], input[type="radio"]');
+        var saveButton = document.getElementById('save');
+        saveButton.disabled = false;
+        inputs.forEach(function (input) {
+            input.disabled = false;
+        });
+
+        //(Re-)initialize: clear the `keep` and `discard` lists
+        var keepList = document.getElementById('keep');
+        var discardList = document.getElementById('discard');
+        keepList.innerHTML = "";
+        discardList.innerHTML = "";
+        //Uncheck the `more options` boxes
+        var moreOptions = document.getElementById("more_settings");
+        var moreOptionsBoxes = moreOptions.querySelectorAll('.item input[type="checkbox"]')
+        moreOptionsBoxes.forEach(function (box) {
+            box.checked = false;
+        });
+
+        var files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        /*Get a list of columns from the first file provided (assuming all the files share a list of columns).
+        Probably dangerous assumption!*/
+        var file = files[0];
+        Papa.parse(file, {
+            complete: function (results) {
+                var thirdRow = results.data[2];
+                //Manually add 'Teaching Assistant'
+                thirdRow.push('Teaching Assistant');
+                //Manually remove 'Topic' and 'Term':
+                thirdRow = thirdRow.filter(function (item) {
+                    return item !== 'Topic' & item !== 'Term'
+                });
+                thirdRow.forEach(function (item) {
+                    if (item.trim() !== '') { // Filter out empty elements
+                        // Rename item if it exists in the renameDict, otherwise use the original name
+                        var renamedItem = renameDict[item] || item;
+
+                        // Check if item is in defaultColumns
+                        if (defaultColumns.includes(renamedItem)) {
+                            // Add renamed item to keepList
+                            var li = document.createElement('li');
+                            li.textContent = renamedItem;
+                            keepList.appendChild(li);
+                        } else {
+                            // Add renamed item to discardList
+                            var li = document.createElement('li');
+                            li.textContent = renamedItem;
+                            discardList.appendChild(li);
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    document.getElementById('tas_in_instructor').addEventListener('change', function () {
+        var tasCheckbox = document.getElementById('tas_in_instructor');
+        var keepList = document.getElementById('keep');
+        var discardList = document.getElementById('discard');
+
+        if (tasCheckbox.checked) {
+            removeItemFromList(keepList, 'Teaching Assistant');
+            removeItemFromList(discardList, 'Teaching Assistant');
+        } else {
+            var li = document.createElement('li');
+            li.textContent = 'Teaching Assistant';
+            discardList.insertBefore(li, discardList.firstChild);
+        }
+    });
+
+    document.getElementById('xlists_in_course').addEventListener('change', function () {
+        var xListCheckbox = document.getElementById('xlists_in_course');
+        var keepList = document.getElementById('keep');
+        var discardList = document.getElementById('discard');
+
+        if (xListCheckbox.checked) {
+            removeItemFromList(keepList, 'Crosslisted');
+            removeItemFromList(discardList, 'Crosslisted');
+        } else {
+            var li = document.createElement('li');
+            li.textContent = 'Crosslisted';
+            discardList.insertBefore(li, discardList.firstChild);
+        }
+    });
+
+    document.getElementById('caps_in_enrollment').addEventListener('change', function () {
+        var capsCheckbox = document.getElementById('caps_in_enrollment');
+        var keepList = document.getElementById('keep');
+        var discardList = document.getElementById('discard');
+
+        if (capsCheckbox.checked) {
+            removeItemFromList(keepList, 'Cap');
+            removeItemFromList(discardList, 'Cap');
+        } else {
+            var li = document.createElement('li');
+            li.textContent = 'Cap';
+            discardList.insertBefore(li, discardList.firstChild);
+        }
+    });
+
+    document.getElementById('separate_title_topic').addEventListener('change', function () {
+        var titleCheckbox = document.getElementById('separate_title_topic');
+        var keepList = document.getElementById('keep');
+        var discardList = document.getElementById('discard');
+        if (titleCheckbox.checked) {
+            var li = document.createElement('li');
+            li.textContent = 'Topic';
+            discardList.insertBefore(li, discardList.firstChild);
+        } else {
+            removeItemFromList(keepList, 'Topic');
+            removeItemFromList(discardList, 'Topic');
+        }
+    });
+
+    // Function to remove an item from a list
+    function removeItemFromList(list, itemText) {
+        var items = list.getElementsByTagName('li');
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].textContent === itemText) {
+                list.removeChild(items[i]);
+                return; // Stop after removing the first occurrence
+            }
+        }
+    }
+</script>
+
+<script>
+    function closeOverlay(overlay) {
+        if (overlay) {
+            overlay.style.display = "none";
+            document.body.style.overflow = 'visible';
+        }
+    };
+
+    document.getElementById('about_link').addEventListener('click', function (event) {
+        event.preventDefault(); // Prevent the default link behavior
+        var overlay = document.getElementById('overlay');
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    });
+
+    document.getElementById('overlay').addEventListener("click", function (event) {
+        var aboutText = document.getElementById('about_text');
+        if (!aboutText.contains(event.target)) {
+            closeOverlay(this);
+            document.body.style.overflow = 'visible';
+        }
+    });
+
+</script>
+
+<script>
+    $("#save").click(function (e) {
+        e.preventDefault();
+        $(this).prop('disabled', true);
+        var formData = new FormData();
+
+
+        //Add files to formData
+        var filesInput = document.getElementById('files');
+        var files = filesInput.files;
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            formData.append('files', file);
+        };
+
+        //Add checkbox settings to formData
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(function (checkbox) {
+            formData.append(checkbox.name, checkbox.checked ? 'true' : 'false');
+        });
+
+        //Add radio button settings...
+        var radios = document.querySelectorAll('input[type="radio"]');
+        radios.forEach(function (radio) {
+            if (radio.checked) {
+                formData.append(radio.name, radio.value);
+            };
+        });
+
+        //Add the columns to keep
+        var liElements = document.querySelectorAll('#keep li');
+        var innerHTMLArray = [];
+        liElements.forEach(function (li) {
+            innerHTMLArray.push(li.innerHTML);
+        });
+        var jsonString = JSON.stringify(innerHTMLArray);
+        formData.append('columns', jsonString);
+        //Send the formData to the server
+        fetch('/automatrix/', {
+            method: 'POST',
+            body: formData,
+        })
+            //Receive the .xlsx back from the server, download
+            .then(response => response.blob())
+            .then(blob => {
+                var link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = 'matrix.xlsx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            })
+    })
+</script>
+
+</html>
