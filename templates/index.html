@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Automatrix</title>
+    <title>AutoMatrix</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
@@ -23,7 +23,7 @@
 
     <div id="wrap">
         <div id="header">
-            <h1>Automatrix</h1>
+            <h1>AutoMatrix</h1>
             <h2>A utility for generating course matrices and schedules with CLSS</h2>
         </div>
         <div id="read_write">
@@ -118,17 +118,18 @@
 
     <div id="overlay">
         <div id="about_text">
-            <p><strong>AutoMatrix</strong> is a utility that automates the generation of <strong>course
+            <p><strong>AutoMatrix</strong> [<a href="https://github.com/mtbtwsk/automatrix/">source code</a>] is a utility that automates the generation of <strong>course
                     matrices</strong> from <a href="https://www.courseleaf.com/software/clss/">CLSS</a> export CSVs.
-                AutoMatrix outputs formatted Excel files:</p>
+                AutoMatrix takes data you entered in CLSS and outputs formatted Excel files:</p>
             <center><img src="{{url_for('static', filename='graphical.png')}}"></center><br>
             <center><img src="{{url_for('static', filename='schedule.png')}}"></center>
 
-            <h2 id="how-to-use-automatrix">How to use AutoMatrix</h2>
+            <p>AutoMatrix does not show canceled sections or sections that don't meet.</p>
+            <h2 id="how-to-use-automatrix">Instructions</h2>
             <p>After your courses have been entered in CLSS:</p>
             <ol>
                 <li>Navigate to the CLSS page for the term and department for which you want course information.</li>
-                <li>Click <code>export</code> in the top right corner:</li>
+                <li>Click <code>Export</code> in the top right corner:</li>
                 <img src="{{url_for('static', filename='export.png')}}">
                 <li><strong>Important</strong>: In the resulting menu, <strong>click <code>Check all</code></strong>, export the full
                     .csv file, and save it to your computer:</li>
@@ -141,7 +142,7 @@
             <h3 id="matrix-settings-panel">Matrix Settings panel</h3>
             <p>The left listbox contains the columns you want to keep in the final output document, in the specified
                 order. It&#39;s preloaded with default choices. Move columns by dragging and dropping.</p>
-            <h3 id="export-views">Export views</h3>
+            <h3 id="export-views">Output views</h3>
             <p>AutoMatrix generates four types of schedules:</p>
             <ul>
                 <li><strong>Course Schedule</strong>: A simple by-quarter schedule of classes, ordered alphabetically by
@@ -167,8 +168,10 @@
                 <li><strong>Exclude Discussion/Laboratory Sections</strong>. These boxes allow you to exclude sections
                     that are listed as labs or discussion sections.</li>
             </ul>
-            <h2 id="note-column-names">Note: Column Names</h2>
-            <p>For legibility, AutoMatrix renames some of the most commonly used columns from their default names in
+            <h2 id="note-column-names">Notes</h2>
+            <p><b>Known bug</b>: the rare classes that meet more than once on a single day may not render correctly in the graphical schedule. This is something to 
+            be fixed in a future version.</p>
+            <p><b>Column naming</b>: For legibility, AutoMatrix renames some of the most commonly used columns from their default names in
                 CLSS. Refer to the following table:</p>
             <table>
                 <thead>
@@ -206,6 +209,7 @@
 </body>
 
 <script>
+    //New names for columns
     var renameDict = {
         'Maximum Enrollment': 'Cap',
         'Section #': 'Sec.',
@@ -214,9 +218,10 @@
         'Course Title': 'Title',
     };
 
+    //Default columns in export
     var defaultColumns = ['Course', 'Sec.', 'Crosslisted', 'Title',
         'Schedule', 'Instructor', 'Teaching Assistant',
-        'Room', 'Cap', 'Section Type'];
+        'Room', 'Enrollment', 'Cap'];
 
     document.getElementById('files').addEventListener('change', function (e) {
         //Ungrey options after a file has been read in
@@ -247,32 +252,41 @@
         var file = files[0];
         Papa.parse(file, {
             complete: function (results) {
-                var thirdRow = results.data[2];
+                var columnsRow = results.data[2];
                 //Manually add 'Teaching Assistant'
-                thirdRow.push('Teaching Assistant');
+                columnsRow.push('Teaching Assistant');
                 //Manually remove 'Topic' and 'Term':
-                thirdRow = thirdRow.filter(function (item) {
+                columnsRow = columnsRow.filter(function (item) {
                     return item !== 'Topic' & item !== 'Term'
                 });
-                thirdRow.forEach(function (item) {
+                var renamedColumns = [];
+                columnsRow.forEach(function (item) {
                     if (item.trim() !== '') { // Filter out empty elements
                         // Rename item if it exists in the renameDict, otherwise use the original name
                         var renamedItem = renameDict[item] || item;
-
-                        // Check if item is in defaultColumns
-                        if (defaultColumns.includes(renamedItem)) {
-                            // Add renamed item to keepList
-                            var li = document.createElement('li');
-                            li.textContent = renamedItem;
-                            keepList.appendChild(li);
-                        } else {
-                            // Add renamed item to discardList
-                            var li = document.createElement('li');
-                            li.textContent = renamedItem;
-                            discardList.appendChild(li);
-                        }
-                    }
-                });
+                        renamedColumns.push(renamedItem);
+                    }});
+                var reorderedColumns = [];
+                defaultColumns.forEach(function (item) {
+                    if (renamedColumns.includes(item)) {
+                        reorderedColumns.push(item);
+                    }});
+                renamedColumns.forEach(function(item) {
+                    if (!reorderedColumns.includes(item)) {
+                        reorderedColumns.push(item);
+                    }});
+                reorderedColumns.forEach(function(item) {
+                    if (defaultColumns.includes(item)) {
+                        // Add renamed item to keepList
+                        var li = document.createElement('li');
+                        li.textContent = item;
+                        keepList.appendChild(li);
+                    } else {
+                        // Add renamed item to discardList
+                        var li = document.createElement('li');
+                        li.textContent = item;
+                        discardList.appendChild(li);
+                    }});
             }
         });
     });
@@ -342,7 +356,7 @@
         for (var i = 0; i < items.length; i++) {
             if (items[i].textContent === itemText) {
                 list.removeChild(items[i]);
-                return; // Stop after removing the first occurrence
+                return;
             }
         }
     }
@@ -357,7 +371,7 @@
     };
 
     document.getElementById('about_link').addEventListener('click', function (event) {
-        event.preventDefault(); // Prevent the default link behavior
+        event.preventDefault();
         var overlay = document.getElementById('overlay');
         overlay.style.display = 'flex';
         document.body.style.overflow = 'hidden';
@@ -394,7 +408,7 @@
             formData.append(checkbox.name, checkbox.checked ? 'true' : 'false');
         });
 
-        //Add radio button settings...
+        //Add radio button settings
         var radios = document.querySelectorAll('input[type="radio"]');
         radios.forEach(function (radio) {
             if (radio.checked) {
@@ -428,6 +442,10 @@
             .catch(error => {
                 console.error('Error:', error);
             })
+            .finally(() => {
+                $('#save').prop('disabled', false);
+            });;
+    
     })
 </script>
 
