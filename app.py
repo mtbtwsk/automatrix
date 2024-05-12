@@ -26,6 +26,7 @@ def automatrix():
                 'graphical'      : ['Graphical Schedule', (request.form.get('graphical_schedule') == 'true')]
                 }
         tas_in_instructor = (request.form.get('tas_in_instructor') == 'true')
+        section_in_course = (request.form.get('section_in_course') == 'true')
         xlists_in_course = (request.form.get('xlists_in_course') == 'true')
         caps_in_enrollment = (request.form.get('caps_in_enrollment') == 'true')
         separate_title_topic = (request.form.get('separate_title_topic') == 'true')
@@ -74,6 +75,11 @@ def automatrix():
                                                                 else row['Title'], axis=1)
             data_to_write.drop(['Topic'],axis=1, inplace=True)
         
+        #Combine section # with course #s?
+        if section_in_course:
+            data_to_write['Sec.'] = data_to_write['Sec.'].astype(int).astype(str)
+            data_to_write['Course'] = data_to_write['Course'].astype(str) + '-' + data_to_write['Sec.'].fillna('').astype(str)
+
         #Combine crosslists with course #s?
         if xlists_in_course:
             data_to_write['Crosslisted'].astype(str).dropna()

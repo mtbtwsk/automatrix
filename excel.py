@@ -387,7 +387,7 @@ class xlwriter:
                          (self.complete_data['Instructor'] == name))
                 new_df = self.data[mask].copy()
 
-                #Drop instructor ('term' never made it over to the writer)
+                #Drop instructor
                 new_df.drop(['Instructor'], 
                             axis=1,
                             inplace=True
