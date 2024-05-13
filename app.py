@@ -133,7 +133,6 @@ def automatrix():
         #end user
         excel_data = BytesIO()
         workbook.save(excel_data)
-        workbook.save('file.xlsx')
         excel_data.seek(0)
 
         #Manually building the response because I couldn't get
