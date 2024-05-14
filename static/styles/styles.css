@@ -5,6 +5,14 @@ html {
     box-sizing: inherit;
   }
 
+a {
+    color:blue;
+}
+
+a:hover{
+    color:red;
+}
+
   body {
     background-color:dodgerblue;
     padding:0;
@@ -14,7 +22,7 @@ html {
     padding:1em;
     border: 2px outset;
     background-color: #dedede;
-    width: clamp(60vw,80vh,100vw);
+    width: clamp(60vw,100vh,100vw);
     margin: 0.5em auto;
     display: grid;
     grid-template-columns:2fr 1fr;
@@ -25,6 +33,7 @@ html {
         "read_write     read_write"
         "keep_discard   export_settings"
         "keep_discard   more_settings"
+        "keep_discard   addl_events"
         "footer         footer"
     ;
     filter: drop-shadow(5px 5px 0px #3f3f3f);
@@ -57,7 +66,7 @@ h3 {
 
 .dragdrop {
     background-color: white;
-    height:90%;
+    height:96%;
     padding: 0;
     margin: 0 0.25em;
     overflow: auto;
@@ -66,10 +75,26 @@ h3 {
 .dragdrop li{
     list-style-type: none;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding-left: 0.25em;
 }
 
 .dragdrop li:hover {
     background-color: #f0f0f0;
+    height: 2em;
+}
+
+#addl_events li{
+    list-style-type: none;
+    display: flex;
+    align-items: center;
+    padding-left: 0.25em;
+}
+
+#addl_events li:hover {
+    background-color: #f0f0f0;
+    height: 2em;
 }
 
 #header {
@@ -94,6 +119,21 @@ h3 {
     grid-area: read_write;
     display: flex;
     justify-content: space-between;
+}
+
+#addl_events {
+    grid-area: addl_events;
+    border: 2px ridge;
+    padding: 0.5em 1em 1em 1em;
+}
+
+#events {
+    width:100%;
+    min-height:200px;
+}
+
+events::placeholder {
+    white-space: pre-line;
 }
 
 #files {
@@ -156,7 +196,7 @@ h3 {
     background-color: #dedede;
     border: 2px outset;
     filter: drop-shadow(5px 5px 0px #3f3f3f);
-    width: clamp(40vw,60vh,80vw);
+    width: clamp(40vw,80vh,90vw);
     padding: 1em;
     overflow: auto;
     height:50vh;

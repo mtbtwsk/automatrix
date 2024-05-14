@@ -153,7 +153,7 @@ class data_handler:
                                isin(['Independent Study', 'Research'])])
         self.data['Title'] = (self.data['Title'].str.
                                      replace(r' \(Prior.*', '', regex=True))
-        self.data['Crosslisted'] = (self.data['Crosslisted'].str.
+        self.data['Crosslisted'] = (self.data['Crosslisted'].fillna('').astype(str).str.
                                  replace('See ','').str.replace('Also ',''))
 
 

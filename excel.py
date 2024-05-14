@@ -1,3 +1,5 @@
+import re,tempfile
+from datetime import datetime
 import pandas as pd
 import numpy as np
 
@@ -8,17 +10,15 @@ import matplotlib.gridspec as gridspec
 from openpyxl.styles import Alignment,Font,PatternFill
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image
-import re,tempfile
-
 
 class xlwriter:
-    def __init__(self, df, views, names, suppressed_data):
+    def __init__(self, df, views, names, suppressed_data, other_events):
         self.data = df
         self.views = views
         self.names = names
         self.complete_data = self.data.join(suppressed_data)
         self.output_row = 1
-
+        self.other_events = other_events
                 
     #Dictionaries for translating day abbreviations
         self.days_dict = {'Monday': 'M', 'Tuesday': 'T', 
@@ -45,8 +45,7 @@ class xlwriter:
                 try:
                     if len(str(cell.value)) > max_length:
                         max_length = len(cell.value)
-                except:
-                    pass
+                except: pass
             adjusted_width = (max_length)/2.25 + 5
             try:
                 ws.column_dimensions[column[0].column_letter].width = adjusted_width
@@ -113,15 +112,29 @@ class xlwriter:
             '#E6E6FA'   # Light Lavender
         ]
         for term in self.complete_data['Term'].unique():
+            events_df = pd.DataFrame({'Course': [], 'Schedule': []})
             data_term = self.complete_data[self.complete_data['Term'] == term]
+
+            #Add any additional events specified by the user
+            for event in self.other_events:
+                event_split = event.split()
+                event_time = ' '.join(event_split[:2])
+                event_name = ' '.join(event_split[2:])
+                events_df = pd.concat([events_df, pd.DataFrame({'Course': [event_name], 'Schedule': [event_time], 'Instructor': ['']})], ignore_index=True)
+            events_df['Meetings'] = get_meetings(events_df)
+            data_term = pd.concat([data_term, events_df], axis=0, ignore_index=True)
             data_term['color'] = palette * (len(data_term) // len(palette)) + palette[:len(data_term) % len(palette)]
+
+            data_term = data_term.fillna('')
+            data_term.loc[data_term['Instructor'] == '', 'color'] = '#FFFF00'
+
             #This is a bit stupid, but I run the same code twice to determine
             #how many columns we need so that the proportions work out. We want the
-            #subplots to vary in width but the bars to be the same size. (It looks 
-            #much nicer.) To do this we need the total number of x-axis ticks to give to 
-            #the GridSpec constructor. 
+            #subplots to vary in width but the bars to be the same size. (It looks
+            #much nicer.) To do this we need the total number of x-axis ticks to give to
+            #the GridSpec constructor.
             max_timelines = []
-            for i, day in enumerate(self.days_dict.values()):
+            for _, day in enumerate(self.days_dict.values()):
                 df_day = data_term[data_term['Meetings'].apply(lambda x : day in x)].copy()
                 df_day['start'] = df_day['Meetings'].apply(lambda x: x[day]['start'])
                 df_day['end'] = df_day['Meetings'].apply(lambda x: x[day]['end'])
@@ -149,7 +162,7 @@ class xlwriter:
 
             start_idx = 0
 
-            for i, day in enumerate(self.days_dict.values()):
+            for _, day in enumerate(self.days_dict.values()):
                 df_day = data_term[data_term['Meetings'].apply(lambda x : day in x)].copy()
                 df_day['start'] = df_day['Meetings'].apply(lambda x: x[day]['start'])
                 df_day['end'] = df_day['Meetings'].apply(lambda x: x[day]['end'])
@@ -198,7 +211,7 @@ class xlwriter:
                 ax.set_xlabel('')
                 ax.set_xticks([])
                 ax.set_ylabel('')
-                ax.invert_yaxis() 
+                ax.invert_yaxis()
 
                 start_idx += max_timeline
             plt.tight_layout()
@@ -449,3 +462,33 @@ class xlwriter:
                            self.complete_data['Instructor'].unique(),
                            len(self.data.columns.tolist())-1
                            )
+
+def get_meetings(df):
+    work = df['Schedule'].astype(str).str.split('; ')
+    list_of_dicts = []
+    for lst in work:
+        temp_dict = {}
+        for item in lst:
+            key, meeting = item.split(' ')
+            times = meeting.split('-')
+            for i in range(len(times)):
+                if ':' not in times[i]:
+                    times[i] = datetime.strptime('01-01-1900 ' + (times[i][:-2] + ":00" + times[i][-2:]), '%m-%d-%Y %I:%M%p')
+                else:
+                    times[i] = datetime.strptime('01-01-1900 ' + times[i],'%m-%d-%Y %I:%M%p')
+            value = {'start': times[0], 'end':times[1]}
+            temp_dict[key] = value
+        list_of_dicts.append(temp_dict)
+    days = ['M','T','W','Th','F']
+    list_of_meetings = []
+    for dct in list_of_dicts:
+        temp_dict={}
+        for key, values in dct.items():
+            for day in days:
+                if day == 'T' and re.search(r"T(?!h)",key):
+                    temp_dict[day] = values                      
+                elif day in key and not day =='T':
+                    temp_dict[day] = values
+        temp_dict = dict(sorted(temp_dict.items(), key=lambda x: days.index(x[0])))
+        list_of_meetings.append(temp_dict)
+    return list_of_meetings

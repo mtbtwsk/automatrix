@@ -34,6 +34,7 @@ def automatrix():
         exclude_labs = (request.form.get('exclude_labs') == 'true')
         name_format = request.form.get('name_format')
         kept_columns = json.loads(request.form.get('columns'))
+        other_events = json.loads(request.form.get('events'))
 
         #Hand the files to the reader, which combines the CSVs into a
         reader = clssreader()
@@ -126,7 +127,8 @@ def automatrix():
         writer = excel.xlwriter(data_to_write,
                                 views,
                                 instructornames,
-                                suppressed_data)
+                                suppressed_data,
+                                other_events)
         workbook = writer.run()
 
         #Create a BytesIO stream for serving the file back to the

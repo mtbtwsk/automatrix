@@ -25,6 +25,7 @@
         <div id="header">
             <h1>AutoMatrix</h1>
             <h2>A utility for generating course matrices and schedules with CLSS</h2>
+            <p id="error-message"></p>
         </div>
         <div id="read_write">
             <input type="file" id="files" name="files" accept=".csv" multiple>
@@ -87,16 +88,16 @@
         <div id="more_settings">
             <h3>More settings</h3>
             <div class="item">
-                <input type="checkbox" id="tas_in_instructor" name="tas_in_instructor" disabled>
-                <label for="tas_in_instructor">Include TAs in <code>Instructor</code> Column</label>
-            </div>
-            <div class="item">
                 <input type="checkbox" id="section_in_course" name="section_in_course" disabled>
                 <label for="section_in_course">Include Section in <code>Course</code> Column</label>
             </div>
             <div class="item">
                 <input type="checkbox" id="xlists_in_course" name="xlists_in_course" disabled>
                 <label for="xlists_in_course">Include Crosslists in <code>Course</code> Column</label>
+            </div>
+            <div class="item">
+                <input type="checkbox" id="tas_in_instructor" name="tas_in_instructor" disabled>
+                <label for="tas_in_instructor">Include TAs in <code>Instructor</code> Column</label>
             </div>
             <div class="item">
                 <input type="checkbox" id="caps_in_enrollment" name="caps_in_enrollment" disabled>
@@ -114,6 +115,13 @@
                 <input type="checkbox" id="exclude_labs" name="exclude_labs" disabled>
                 <label for="exclude_labs">Exclude Laboratory Sections</label>
             </div>
+        </div>
+        <div id="addl_events">
+            <h3>Other events</h3>
+            <p style="margin-bottom: 0em; margin-top: 0.25em;"><span style="font-style: italic;">Graphical schedule only.</span> Format:</p>
+            <p style="margin-top: 0em;"><code>MTWThF 10am-11:20am Event name</code></p>
+            <textarea name="events" id="events" placeholder="M 9am-11am Faculty meeting
+Th 4pm-6pm Colloquium"></textarea>
         </div>
         <div id="footer">
             <p id="about_link">About</p>
@@ -151,7 +159,7 @@
             <h3 id="matrix-settings-panel">Keep and discard columns</h3>
             <p>The left listbox contains the columns you want to keep in the final output document, in the specified
                 order. It&#39;s preloaded with default choices. Move columns by dragging and dropping.</p>
-            <h3 id="export-views">Output views</h3>
+            <h3 id="output-views">Output views</h3>
             <p>AutoMatrix generates four types of schedules:</p>
             <ul>
                 <li><strong>Course Schedule</strong>: A simple by-quarter schedule of classes, ordered alphabetically by
@@ -179,11 +187,28 @@
                 <li><strong>Exclude Discussion/Laboratory Sections</strong>. These boxes allow you to exclude sections
                     that are listed as labs or discussion sections.</li>
             </ul>
+
+            <h3 id="other-events">Other events</h3>
+            <p>You may want to include other events on your graphical schedule besides classes—for instance, faculty meetings,
+                research group or lab meetings, or colloquia. AutoMatrix allows you to add events like this to your schedule. 
+                Make sure that your event's time is specified in the following format: <code>MTWThF 10am-11:20am Event name</code>.</p>
+                <b>Some notes about custom events:</b>
+                    <ul>
+                        <li>Tuesday is <code>T</code>, not <code>Tu</code>.</li>
+                        <li>Times on the hour should be written line <code>10am</code>, not
+                        <code>10:00am</code>. <code>am</code> and <code>pm</code> are obligatory.</li>
+                        <li>Weekends are not supported.</li>
+                        <li>AutoMatrix will alert you if you used the wrong format for times. However, it won't check if the event makes 
+                        sense. Impossible times like <code>10am-6am</code> might cause your output file to be corrupted.</li>
+                        <li>If the name for an event is too long, the text may overflow its box. Event names are on one line only.</li>
+                        <li>Custom events are shown in bright yellow to visually distinguish them from classes.</li>
+                </ul>
+                </p>
+            </p>
             <h2 id="note-column-names">Notes</h2>
             <p><b>Known bugs</b>: Classes that meet more than once on a single day may not render correctly in the
                 graphical schedule.
-                Also in the graphical schedule, the text on sections with many primary instructors or especially long
-                titles may overflow their boxes.</p>
+                Also in the graphical schedule, the text on sections with many primary instructors may overflow their boxes.</p>
             <p><b>Column naming</b>: For legibility, AutoMatrix renames some of the most commonly used columns from
                 their default names in
                 CLSS. Refer to the following table:</p>
@@ -424,6 +449,26 @@
     $("#save").click(function (e) {
         e.preventDefault();
         $(this).prop('disabled', true);
+
+        //Validate `other events` field
+            // Get the textarea element
+        var eventsTextarea = document.getElementById('events');
+        // Get the value of the textarea
+        var eventsValue = eventsTextarea.value.trim();
+        var error = false;
+        var eventsArray = [];
+        document.getElementById('error-message').textContent = '';
+        // Define the regular expression pattern for the specified format
+        const formatPattern = /^(M?T?W?(Th)?F?)\s(?:\d{1,2}(?::[1-5]\d)?\s?(?:am|pm)-\d{1,2}(?::[1-5]\d)?\s?(?:am|pm))\s.*$/;
+        if (eventsValue !== ''){
+            eventsArray = eventsValue.split('\n');
+            eventsArray.forEach(event => {
+                if(!formatPattern.test(event)) {
+                    error = true;
+                }
+            });
+
+        };
         var formData = new FormData();
 
 
@@ -455,9 +500,15 @@
         liElements.forEach(function (li) {
             innerHTMLArray.push(li.innerHTML);
         });
-        var jsonString = JSON.stringify(innerHTMLArray);
-        formData.append('columns', jsonString);
+        var columnsString = JSON.stringify(innerHTMLArray);
+        formData.append('columns', columnsString);
+        var eventsString = JSON.stringify(eventsArray);
+        formData.append('events',eventsString);
         //Send the formData to the server
+        if(error) {
+            document.getElementById('error-message').textContent = 'Invalid format! Please enter events in the correct format.';
+            $('#save').prop('disabled', false);
+        } else {
         fetch('/automatrix/', {
             method: 'POST',
             body: formData,
@@ -477,7 +528,8 @@
             })
             .finally(() => {
                 $('#save').prop('disabled', false);
-            });;
+            });
+        }
 
     })
 </script>
